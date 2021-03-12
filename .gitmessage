@@ -1,0 +1,59 @@
+
+
+# ==================== Emojis & Prefix ====================
+# 🎉  :tada:Initial Commit (Prefixなし 最初のコミット)
+# 🐛  :bug:fix: A bug fix (バグ修正)
+# 🚑  :ambulance:hotfix: Critical hotfix (クリティカルなバグ修正)
+# ✨  :sparkles:feat: A new feature (新機能追加)
+# 🔥  :fire:remove: Remove code or files. (コードやファイルの削除)
+# 🎨  :art:style: Improve structure / format of the code. (コードの意味に影響を及ぼさない変更、フォーマット、インデントの調整やセミコロンの欠落など)
+# 📝  :memo:docs: Add or update documentation. (ドキュメントの編集)
+# ♻️  :recycle:refactor: Refactor code. (リファクタリング)
+# ⚡️  :zap:perf: Improve performance. (パフォーマンスを改善させる)
+# ✅  :white_check_mark:test: Add or update tests. (テストの追加や修正)
+# ➕  :heavy_plus_sign:chore: Add a dependency. (ライブラリ、依存関係を追加)
+# ➖  :heavy_minus_sign:chore: Remove a dependency. (ライブラリ、依存関係を削除)
+# ⬆️  :arrow_up:chore: Upgrade dependencies. (ライブラリ、依存関係のアップグレード)
+# ⬇️  :arrow_down:chore: Downgrade dependencies. (ライブラリ、依存関係のダウングレード)
+# 📌  :pushpin:chore: Pin dependencies to specific versions. (ライブラリ、依存関係を特定バージョンに固定する)
+
+
+# ==================== Format ====================
+# :emoji:prefix: Subject
+#
+# Commit body...
+
+
+# ==================== Description ====================
+# Emojis & Prefix がコミットのテンプレートです。
+# コミットする際はこれを利用して行ってください。
+# タイトルだけで内容が把握できる場合は、1行目だけで問題ありません。
+# 
+# 1行目：変更内容の要約（タイトル、概要）
+# 2行目 ：空行
+# 3行目以降：変更した理由（内容、詳細）
+#
+# 例）
+# :art:style: ファイル全体のフォーマット
+#
+# Prettierを導入し、すべてのファイルにフォーマットを実行しました。
+#
+# タイトル（Subject）の最後に絵文字をひとつ書くことができます。
+# なにかを表現してください（現在の感情、そのコミットへの思いなど）
+# 絵文字はGitHubに対応しているものを利用してください。
+# https://www.webfx.com/tools/emoji-cheat-sheet/
+# これはオプションの遊び要素です！
+#
+# コミットに対応する適切な Emojis & Prefix がない場合は
+# 絵文字なしの chore: を利用してください。英単語の意味は雑用らしいです。
+# 
+# このテンプレートは完成したものではありませんので
+# ご意見はいつでも受け付けております。
+# 例えばライブラリ関連を細かく分けていますが
+# 運用上不便な場合は考え直します。
+
+
+# ==================== Reference ====================
+# gitmoji | An emoji guide for your commit messages: https://gitmoji.dev/
+# AngularJS Git Commit Prefix: https://github.com/angular/angular.js/blob/master/DEVELOPERS.md#type
+# Atom Git Commit Messages: https://github.com/atom/atom/blob/master/CONTRIBUTING.md#git-commit-messages
