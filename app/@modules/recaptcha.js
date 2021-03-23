@@ -32,7 +32,7 @@ const { fetchWrapper } = require("./fetch");
 // --------------------------------------------------
 
 /**
- * reCAPTCHAの検証を行う
+ * reCAPTCHA の検証を行う
  * @param {string} response - reCAPTCHAのトークン
  * @param {string} remoteip - アクセスしたユーザーのIP
  */
