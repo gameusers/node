@@ -25,6 +25,11 @@ Game Users はゲームに特化した総合サイトです。ゲームが好き
 [運営中のウェブサイト](https://gameusers.org/)
 <br /><br /><br />
 
+# 開発について
+
+GitHub の機能を有効利用して開発についての情報を充実させていきます。[Projects](https://github.com/gameusers/node/projects) や [Wiki](https://github.com/gameusers/node/wiki) もチェックしてください。
+<br /><br /><br />
+
 # 開発環境の作り方
 
 2 つの方法を用意しています。1 番の Docker を利用する方法が簡単でおすすめです。2 番はお使いの環境で Docker を利用できない場合、またはすでに Node.js と MongoDB のレプリカセットが利用できる環境である場合などに利用してください。
@@ -65,7 +70,7 @@ Docker を利用します。起動していない場合は、以下のコマン�
 
 <br />
 
-ディレクトリのルートに [docker.sh](https://github.com/gameusers/node/blob/main/docker.sh) というファイルが用意されます。これは初回起動の処理をまとめたシェルスクリプトです。コンテナの起動、MongoDB のレプリカセットの設定、MongoDB のユーザー追加、サーバーの起動までを行います。以下は例です。配置した場所に合わせてパスを変更して実行してください。
+ディレクトリのルートに [docker.sh](https://github.com/gameusers/node/blob/main/docker.sh) というファイルが用意されます。これは初回起動の処理をまとめたシェルスクリプトです。コンテナの起動、MongoDB のレプリカセットの設定、MongoDB のユーザー追加、パッケージのインストール、サーバーの起動までを行います。以下は例です。配置した場所に合わせてパスを変更して実行してください。
 
     bash /home/（ユーザー名）/gameusers/node/docker.sh
 
