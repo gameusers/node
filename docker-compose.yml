@@ -15,6 +15,7 @@ services:
     tty: true
     volumes:
       - .:/src
+      #- /src/node_modules
     environment:
       - NODE_ENV=development
       - DB_URL_DOCKER=mongo1:27017,mongo2:27017,mongo3:27017

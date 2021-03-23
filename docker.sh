@@ -24,6 +24,9 @@ docker-compose exec mongo1 mongo --host localhost /src/docker/mongo/init-user-ro
 docker-compose exec mongo1 mongo admin -u root -p password /src/docker/mongo/init-user-gameusers.js
 
 
+# パッケージインストール
+docker exec -it gameusers-node npm install
+
 # サーバー起動
 docker exec -it gameusers-node npm run dev
 
