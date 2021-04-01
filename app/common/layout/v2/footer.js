@@ -45,6 +45,16 @@ import Fab from "@material-ui/core/Fab";
 import IconLocalFlorist from "@material-ui/icons/LocalFlorist";
 import IconCopyright from "@material-ui/icons/Copyright";
 import IconNavigation from "@material-ui/icons/Navigation";
+import IconButton from "@material-ui/core/IconButton";
+
+// ---------------------------------------------
+//   Simple Icons
+// ---------------------------------------------
+
+import {
+  Twitter as SimpleIconTwitter,
+  Github as SimpleIconGitHub,
+} from "@icons-pack/react-simple-icons";
 
 // --------------------------------------------------
 //   Emotion
@@ -116,6 +126,10 @@ const Component = (props) => {
           flex-flow: row nowrap;
           font-size: 14px;
           color: white;
+
+          @media screen and (max-width: 480px) {
+            margin: 0 0 6px 0;
+          }
         `}
       >
         {/* Logo Flower */}
@@ -124,15 +138,12 @@ const Component = (props) => {
             && {
               font-size: 30px;
               height: 34px;
-              min-width: 30px;
               min-height: 34px;
               padding: 0 20px 0 8px;
 
               @media screen and (max-width: 480px) {
                 font-size: 18px;
-                height: 30px;
-                min-height: 30px;
-                padding: 0 14px 0 10px;
+                padding: 0;
               }
             }
           `}
@@ -157,8 +168,8 @@ const Component = (props) => {
             display: flex;
             flex-flow: row wrap;
             flex-grow: 2;
-            // margin: 0 0 0 0;
             color: white;
+            margin: 0 12px 0 6px;
 
             @media screen and (max-width: 480px) {
               font-size: 12px;
@@ -178,18 +189,38 @@ const Component = (props) => {
           </div>
           <div css={cssMenuVerticalBar}>|</div>
           <div css={cssMenu}>
-            <Link href="https://twitter.com/gameusersorg">
-              <a className="link-white">Twitter</a>
-            </Link>
+            <IconButton
+              css={css`
+                && {
+                  margin: 0 10px 0 0;
+                  padding: 0;
+                }
+              `}
+              aria-label="Twitter"
+              href="https://twitter.com/gameusersorg"
+              target="_blank"
+            >
+              <SimpleIconTwitter title="Twitter" color="#1DA1F2" size={20} />
+            </IconButton>
+
+            <IconButton
+              css={css`
+                && {
+                  padding: 0;
+                }
+              `}
+              aria-label="GitHub"
+              href="https://github.com/gameusers/node"
+              target="_blank"
+            >
+              <SimpleIconGitHub title="GitHub" color="#FFFFFF" size={20} />
+            </IconButton>
           </div>
         </div>
 
         {/* Scroll To Top Icon */}
         <div
           css={css`
-            // position: absolute;
-            // top: 10px;
-            // right: 10px;
             margin: 0 10px 0 0;
           `}
         >
