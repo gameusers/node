@@ -18,7 +18,7 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const path = require("path");
 
-const flash = require("connect-flash");
+// const flash = require("connect-flash");
 const passport = require("passport");
 const session = require("express-session");
 const MongoStore = require("connect-mongo")(session);
@@ -133,7 +133,7 @@ app.prepare().then(() => {
 
   server.use(cookieParser());
 
-  server.use(flash());
+  // server.use(flash());
 
   server.use(session(sessObj));
 
