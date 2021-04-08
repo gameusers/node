@@ -1630,14 +1630,28 @@ const findForDelete = async ({
       ["recruitmentThreads_id"],
       ""
     );
-
+    //   console.log(`
+    //   ----- docCommentObj -----\n
+    //   ${util.inspect(docCommentObj, { colors: true, depth: null })}\n
+    //   --------------------\n
+    // `);
     // --------------------------------------------------
     //   編集権限がない場合は処理停止
     // --------------------------------------------------
 
     let editable = false;
 
-    if (type === "delete") {
+    // 投稿した本人の権限チェック
+    editable = verifyAuthority({
+      req,
+      users_id: lodashGet(docCommentObj, ["users_id"], ""),
+      loginUsers_id,
+      ISO8601: lodashGet(docCommentObj, ["createdDate"], ""),
+      _id: lodashGet(docCommentObj, ["_id"], ""),
+    });
+
+    // 募集の投稿者が削除する場合
+    if (type === "delete" && !editable) {
       editable = verifyAuthority({
         req,
         users_id: lodashGet(
@@ -1652,14 +1666,6 @@ const findForDelete = async ({
           ""
         ),
         _id: lodashGet(docCommentObj, ["recruitmentThreadsObj", "_id"], ""),
-      });
-    } else {
-      editable = verifyAuthority({
-        req,
-        users_id: lodashGet(docCommentObj, ["users_id"], ""),
-        loginUsers_id,
-        ISO8601: lodashGet(docCommentObj, ["createdDate"], ""),
-        _id: lodashGet(docCommentObj, ["_id"], ""),
       });
     }
 
