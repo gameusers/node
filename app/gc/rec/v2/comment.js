@@ -1633,7 +1633,6 @@ const Component = (props) => {
         >
           <Pagination
             disabled={buttonDisabled}
-            onChange={() => {}}
             onChange={(page) =>
               handleRead({
                 page,
@@ -1655,7 +1654,6 @@ const Component = (props) => {
         >
           <Select
             value={limit}
-            onChange={() => {}}
             onChange={(eventObj) =>
               handleRead({
                 page: 1,

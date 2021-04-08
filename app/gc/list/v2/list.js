@@ -269,7 +269,7 @@ const Component = (props) => {
     //   push
     // --------------------------------------------------
 
-    componentsArr.push(<CardGc obj={dataObj} />);
+    componentsArr.push(<CardGc key={index} obj={dataObj} />);
   }
 
   // --------------------------------------------------
