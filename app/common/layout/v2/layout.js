@@ -51,7 +51,6 @@ import Sidebar from "app/common/layout/v2/sidebar.js";
 import Footer from "app/common/layout/v2/footer.js";
 import Dialog from "app/common/layout/v2/dialog.js";
 import VideoModal from "app/common/image-and-video/v2/video-modal.js";
-// import Snackbar from "app/common/layout/v2/snackbar.js";
 import Loading from "app/common/layout/v2/loading.js";
 import DialogCard from "app/common/layout/v2/dialog-card.js";
 import DialogAchievement from "app/common/layout/v2/dialog-achievement.js";
@@ -411,9 +410,6 @@ const Component = (props) => {
 
       {/* 動画表示用モーダル */}
       <VideoModal />
-
-      {/* Snackbar 通知用 */}
-      {/* <Snackbar /> */}
 
       {/* Loading */}
       <Loading />

@@ -49,7 +49,7 @@ import { formatImagesAndVideosArr } from "app/@database/images-and-videos/format
 import { locale } from "app/@locales/locale.js";
 
 // --------------------------------------------------
-//   endpointID: 73be0Rq9j
+//   endpointID: xky4n6dz7
 // --------------------------------------------------
 
 export default async (req, res) => {
@@ -153,7 +153,7 @@ export default async (req, res) => {
 
     const resultErrorObj = returnErrorsArr({
       errorObj,
-      endpointID: "73be0Rq9j",
+      endpointID: "xky4n6dz7",
       users_id: loginUsers_id,
       ip,
       userAgent,

@@ -42,7 +42,7 @@ const ModelDevelopersPublishers = require("../developers-publishers/model.js");
 const { formatImagesAndVideosObj } = require("../images-and-videos/format");
 
 // --------------------------------------------------
-//   Function
+//   Common
 // --------------------------------------------------
 
 /**
@@ -228,6 +228,10 @@ const deleteMany = async ({ conditionObj, reset = false }) => {
     throw err;
   }
 };
+
+// --------------------------------------------------
+//   Function
+// --------------------------------------------------
 
 /**
  * 取得する / ヒーローイメージ用データ
@@ -1033,7 +1037,7 @@ const findEditData = async ({ localeObj, games_id }) => {
 };
 
 // --------------------------------------------------
-//   transaction
+//   Transaction
 // --------------------------------------------------
 
 /**
