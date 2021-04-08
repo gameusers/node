@@ -31,7 +31,6 @@ import { css, jsx } from "@emotion/react";
 
 import lodashGet from "lodash/get";
 import lodashSet from "lodash/set";
-import lodashHas from "lodash/has";
 import lodashCloneDeep from "lodash/cloneDeep";
 import lodashMerge from "lodash/merge";
 import lodashThrottle from "lodash/throttle";
@@ -43,7 +42,7 @@ import lodashThrottle from "lodash/throttle";
 import { makeStyles } from "@material-ui/core/styles";
 
 import IconButton from "@material-ui/core/IconButton";
-import Badge from "@material-ui/core/Badge";
+// import Badge from "@material-ui/core/Badge";
 import Avatar from "@material-ui/core/Avatar";
 import Menu from "@material-ui/core/Menu";
 import MenuItem from "@material-ui/core/MenuItem";
@@ -51,14 +50,9 @@ import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
 import InputAdornment from "@material-ui/core/InputAdornment";
 import TextField from "@material-ui/core/TextField";
-import Input from "@material-ui/core/Input";
 import Button from "@material-ui/core/Button";
 import ButtonGroup from "@material-ui/core/ButtonGroup";
 import Paper from "@material-ui/core/Paper";
-import Popper from "@material-ui/core/Popper";
-import OutlinedInput from "@material-ui/core/OutlinedInput";
-import FormControl from "@material-ui/core/FormControl";
-import Select from "@material-ui/core/Select";
 import ClickAwayListener from "@material-ui/core/ClickAwayListener";
 
 // ---------------------------------------------
@@ -66,7 +60,7 @@ import ClickAwayListener from "@material-ui/core/ClickAwayListener";
 // ---------------------------------------------
 
 import IconLogin from "@material-ui/icons/ExitToApp";
-import IconNotifications from "@material-ui/icons/Notifications";
+// import IconNotifications from "@material-ui/icons/Notifications";
 import IconSearch from "@material-ui/icons/Search";
 import IconPerson from "@material-ui/icons/Person";
 import IconEject from "@material-ui/icons/Eject";
@@ -87,7 +81,6 @@ import { ContainerStateLayout } from "app/@states/layout.js";
 import { fetchWrapper } from "app/@modules/fetch.js";
 import { CustomError } from "app/@modules/error/custom.js";
 import { showSnackbar } from "app/@modules/snackbar.js";
-// import { getCookie } from "app/@modules/cookie.js";
 
 // ---------------------------------------------
 //   Components
@@ -227,8 +220,7 @@ const Component = (props) => {
 
   const [searchType, setSearchType] = useState("gc");
   const [searchKeyword, setSearchKeyword] = useState("");
-  // 製品版の場合、ページアクセス後フォーカスが検索フォームに行くが、開発版の場合は行かない
-  const [searchOnFocus, setSearchOnFocus] = useState(true);
+  const [searchOnFocus, setSearchOnFocus] = useState(false);
   const [searchResultsOpen, setSearchResultsOpen] = useState(false);
   const [searchResultsObj, setSearchResultsObj] = useState({});
   const searchRef = useRef(null);
@@ -879,8 +871,6 @@ const Component = (props) => {
             showFollow={true}
             showEditButton={false}
             defaultExpanded={false}
-            // cardPlayersObj={cardPlayersObj}
-            // setCardPlayersObj={setCardPlayersObj}
           />
         </div>
       );
@@ -915,7 +905,6 @@ const Component = (props) => {
               width: 100%;
             }
           `}
-          // elevation={12}
         >
           <div
             css={css`
@@ -1112,7 +1101,6 @@ const Component = (props) => {
               width: 90%;
             }
           `}
-          autoFocus={true}
           placeholder="検索"
           value={searchKeyword}
           onChange={(eventObj) =>
