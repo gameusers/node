@@ -53,7 +53,7 @@ const { formatFollowsObj } = require("../follows/format.js");
 const { CustomError } = require("../../@modules/error/custom.js");
 
 // --------------------------------------------------
-//   Function
+//   Common
 // --------------------------------------------------
 
 /**
@@ -239,6 +239,10 @@ const deleteMany = async ({ conditionObj, reset = false }) => {
     throw err;
   }
 };
+
+// --------------------------------------------------
+//   Function
+// --------------------------------------------------
 
 /**
  * 取得する
@@ -1384,6 +1388,96 @@ const findOneBy_idForEditForm = async ({ _id, localeObj, loginUsers_id }) => {
 };
 
 /**
+ * DBから取得したカード情報をフォーマットする　編集フォーム用
+ * @param {Array} cardPlayersArr - カード情報の入った配列
+ * @param {Object} idsObj - ID情報の入ったオブジェクト
+ * @return {Object} フォーマット後のデータ
+ */
+const formatForEditForm = ({ cardPlayersArr, idsObj }) => {
+  // --------------------------------------------------
+  //   Return Value
+  // --------------------------------------------------
+
+  let returnObj = {};
+
+  // --------------------------------------------------
+  //   Loop
+  // --------------------------------------------------
+
+  for (let valueObj of cardPlayersArr) {
+    // --------------------------------------------------
+    //   ディープコピー
+    // --------------------------------------------------
+
+    const clonedObj = lodashCloneDeep(valueObj);
+
+    // --------------------------------------------------
+    //   hardwareActive
+    // --------------------------------------------------
+
+    clonedObj.hardwareActiveArr = [];
+
+    for (let value of valueObj.hardwareActiveObj.valueArr) {
+      const obj = valueObj.hardwaresArr.find((value2) => {
+        return value2.hardwareID === value;
+      });
+
+      if (obj && "name" in obj) {
+        clonedObj.hardwareActiveArr.push({
+          hardwareID: value,
+          name: obj.name,
+        });
+      }
+    }
+
+    // --------------------------------------------------
+    //   hardwareInactive
+    // --------------------------------------------------
+
+    clonedObj.hardwareInactiveArr = [];
+
+    for (let value of valueObj.hardwareInactiveObj.valueArr) {
+      const obj = valueObj.hardwaresArr.find((value2) => {
+        return value2.hardwareID === value;
+      });
+
+      if (obj && "name" in obj) {
+        clonedObj.hardwareInactiveArr.push({
+          hardwareID: value,
+          name: obj.name,
+        });
+      }
+    }
+
+    // --------------------------------------------------
+    //   ID
+    // --------------------------------------------------
+
+    clonedObj.ids_idsArr = [];
+
+    for (let value of valueObj.ids_idsArr) {
+      if (value in idsObj) {
+        clonedObj.ids_idsArr.push(idsObj[value]);
+      }
+    }
+
+    // --------------------------------------------------
+    //   不要な項目を削除する
+    // --------------------------------------------------
+
+    delete clonedObj.hardwaresArr;
+
+    returnObj[valueObj._id] = clonedObj;
+  }
+
+  // --------------------------------------------------
+  //   Return
+  // --------------------------------------------------
+
+  return returnObj;
+};
+
+/**
  * 取得する / フォロワー用
  * @param {Object} localeObj - ロケール
  * @param {string} loginUsers_id - DB users _id / ログイン中のユーザーID
@@ -1721,12 +1815,21 @@ const findForFollowers = async ({
 };
 
 /**
- * DBから取得したカード情報をフォーマットする　編集フォーム用
- * @param {Array} cardPlayersArr - カード情報の入った配列
- * @param {Object} idsObj - ID情報の入ったオブジェクト
- * @return {Object} フォーマット後のデータ
+ * 取得する / 検索用
+ * @param {Object} localeObj - ロケール
+ * @param {string} loginUsers_id - DB users _id / ログイン中のユーザーID
+ * @param {string} keyword - キーワード
+ * @param {number} page - ページ
+ * @param {number} limit - リミット
+ * @return {Object} 取得データ
  */
-const formatForEditForm = ({ cardPlayersArr, idsObj }) => {
+const findForSearch = async ({
+  localeObj,
+  loginUsers_id,
+  keyword,
+  page = 1,
+  limit,
+}) => {
   // --------------------------------------------------
   //   Return Value
   // --------------------------------------------------
@@ -1734,81 +1837,169 @@ const formatForEditForm = ({ cardPlayersArr, idsObj }) => {
   let returnObj = {};
 
   // --------------------------------------------------
-  //   Loop
+  //   Database
   // --------------------------------------------------
 
-  for (let valueObj of cardPlayersArr) {
+  try {
     // --------------------------------------------------
-    //   ディープコピー
-    // --------------------------------------------------
-
-    const clonedObj = lodashCloneDeep(valueObj);
-
-    // --------------------------------------------------
-    //   hardwareActive
+    //   parseInt
     // --------------------------------------------------
 
-    clonedObj.hardwareActiveArr = [];
-
-    for (let value of valueObj.hardwareActiveObj.valueArr) {
-      const obj = valueObj.hardwaresArr.find((value2) => {
-        return value2.hardwareID === value;
-      });
-
-      if (obj && "name" in obj) {
-        clonedObj.hardwareActiveArr.push({
-          hardwareID: value,
-          name: obj.name,
-        });
-      }
-    }
+    let intPage = parseInt(page, 10);
+    let intLimit = parseInt(limit, 10);
 
     // --------------------------------------------------
-    //   hardwareInactive
+    //   検索条件
     // --------------------------------------------------
 
-    clonedObj.hardwareInactiveArr = [];
-
-    for (let value of valueObj.hardwareInactiveObj.valueArr) {
-      const obj = valueObj.hardwaresArr.find((value2) => {
-        return value2.hardwareID === value;
-      });
-
-      if (obj && "name" in obj) {
-        clonedObj.hardwareInactiveArr.push({
-          hardwareID: value,
-          name: obj.name,
-        });
-      }
-    }
+    const pattern = new RegExp(`.*${keyword}.*`);
 
     // --------------------------------------------------
-    //   ID
+    //   Count
     // --------------------------------------------------
 
-    clonedObj.ids_idsArr = [];
-
-    for (let value of valueObj.ids_idsArr) {
-      if (value in idsObj) {
-        clonedObj.ids_idsArr.push(idsObj[value]);
-      }
-    }
+    const listCount = await count({
+      conditionObj: {
+        name: { $regex: pattern, $options: "i" },
+        search: true,
+      },
+    });
 
     // --------------------------------------------------
-    //   不要な項目を削除する
+    //   キーワードで検索して users_id を取得する
     // --------------------------------------------------
 
-    delete clonedObj.hardwaresArr;
+    const docArr = await SchemaCardPlayers.aggregate([
+      // --------------------------------------------------
+      //   $match
+      // --------------------------------------------------
 
-    returnObj[valueObj._id] = clonedObj;
+      {
+        $match: {
+          name: { $regex: pattern, $options: "i" },
+          search: true,
+        },
+      },
+
+      // --------------------------------------------------
+      //   $group
+      // --------------------------------------------------
+
+      { $group: { _id: null, users_idsArr: { $push: "$users_id" } } },
+
+      // --------------------------------------------------
+      //   $project
+      // --------------------------------------------------
+
+      {
+        $project: {
+          _id: 0,
+          users_idsArr: 1,
+        },
+      },
+    ]).exec();
+
+    const users_idsArr = lodashGet(docArr, [0, "users_idsArr"], []);
+
+    // console.log(`
+    //   ----- docArr -----\n
+    //   ${util.inspect(docArr, { colors: true, depth: null })}\n
+    //   --------------------\n
+    // `);
+
+    // console.log(`
+    //   ----- users_idsArr -----\n
+    //   ${util.inspect(users_idsArr, { colors: true, depth: null })}\n
+    //   --------------------\n
+    // `);
+
+    // const docArr = await find({
+    //   conditionObj: {
+    //     name: { $regex: pattern, $options: "i" },
+    //   },
+    // });
+
+    // --------------------------------------------------
+    //   Match Condition Array
+    // --------------------------------------------------
+
+    const matchConditionArr = [
+      {
+        $match: {
+          _id: { $in: users_idsArr },
+        },
+      },
+    ];
+
+    // --------------------------------------------------
+    //   データ取得
+    // --------------------------------------------------
+
+    const formattedObj = await aggregateAndFormat({
+      localeObj,
+      loginUsers_id,
+      matchConditionArr,
+      page: intPage,
+      limit: intLimit,
+    });
+
+    // --------------------------------------------------
+    //   returnObj
+    // --------------------------------------------------
+
+    returnObj = {
+      page,
+      limit,
+      count: listCount,
+      dataObj: lodashGet(formattedObj, ["cardPlayersObj"], {}),
+    };
+
+    returnObj[`page${page}Obj`] = {
+      loadedDate: moment().utc().toISOString(),
+      arr: lodashGet(formattedObj, ["cardPlayers_idsArr"], []),
+    };
+
+    // --------------------------------------------------
+    //   console.log
+    // --------------------------------------------------
+
+    // console.log(`
+    //   ----------------------------------------\n
+    //   /app/@database/card-players/model.js - findForSearch
+    // `);
+
+    // console.log(chalk`
+    //   loginUsers_id: {green ${loginUsers_id}}
+    //   page: {green ${page}}
+    //   limit: {green ${limit}}
+    //   listCount: {green ${listCount}}
+    // `);
+
+    // console.log(`
+    //   ----- formattedObj -----\n
+    //   ${util.inspect(formattedObj, { colors: true, depth: null })}\n
+    //   --------------------\n
+    // `);
+
+    // console.log(`
+    //   ----- returnObj -----\n
+    //   ${util.inspect(returnObj, { colors: true, depth: null })}\n
+    //   --------------------\n
+    // `);
+
+    // --------------------------------------------------
+    //   Return
+    // --------------------------------------------------
+
+    return returnObj;
+  } catch (err) {
+    throw err;
   }
-
-  // --------------------------------------------------
-  //   Return
-  // --------------------------------------------------
-
-  return returnObj;
 };
+
+// --------------------------------------------------
+//   Transaction
+// --------------------------------------------------
 
 /**
  * Transaction 挿入 / 更新する
@@ -2022,6 +2213,7 @@ module.exports = {
   findOneForEdit,
   findOneBy_idForEditForm,
   findForFollowers,
+  findForSearch,
 
   transactionForUpsert,
 };

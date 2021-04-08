@@ -13,11 +13,14 @@ import util from "util";
 //   Node Packages
 // ---------------------------------------------
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useIntl } from "react-intl";
 import { useSnackbar } from "notistack";
 import { useSpring, animated } from "react-spring";
+import moment from "moment";
+import Pagination from "rc-pagination";
+import localeInfo from "rc-pagination/lib/locale/ja_JP";
 
 /** @jsx jsx */
 import { css, jsx } from "@emotion/react";
@@ -28,6 +31,9 @@ import { css, jsx } from "@emotion/react";
 
 import lodashGet from "lodash/get";
 import lodashSet from "lodash/set";
+import lodashHas from "lodash/has";
+import lodashCloneDeep from "lodash/cloneDeep";
+import lodashMerge from "lodash/merge";
 import lodashThrottle from "lodash/throttle";
 
 // ---------------------------------------------
@@ -45,6 +51,15 @@ import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
 import InputAdornment from "@material-ui/core/InputAdornment";
 import TextField from "@material-ui/core/TextField";
+import Input from "@material-ui/core/Input";
+import Button from "@material-ui/core/Button";
+import ButtonGroup from "@material-ui/core/ButtonGroup";
+import Paper from "@material-ui/core/Paper";
+import Popper from "@material-ui/core/Popper";
+import OutlinedInput from "@material-ui/core/OutlinedInput";
+import FormControl from "@material-ui/core/FormControl";
+import Select from "@material-ui/core/Select";
+import ClickAwayListener from "@material-ui/core/ClickAwayListener";
 
 // ---------------------------------------------
 //   Material UI / Icons
@@ -72,6 +87,15 @@ import { ContainerStateLayout } from "app/@states/layout.js";
 import { fetchWrapper } from "app/@modules/fetch.js";
 import { CustomError } from "app/@modules/error/custom.js";
 import { showSnackbar } from "app/@modules/snackbar.js";
+// import { getCookie } from "app/@modules/cookie.js";
+
+// ---------------------------------------------
+//   Components
+// ---------------------------------------------
+
+import CardGc from "app/common/community-list/v2/card-gc.js";
+import CardUc from "app/common/community-list/v2/card-uc.js";
+import CardPlayer from "app/common/card/v2/card-player.js";
 
 // --------------------------------------------------
 //   Material UI Style Overrides
@@ -84,6 +108,21 @@ const useStyles = makeStyles({
     right: 0,
     marginTop: 14,
     marginRight: 14,
+  },
+
+  paperSearch: {
+    top: 0,
+    left: 0,
+    right: 0,
+    width: "600px",
+    margin: "60px auto 0",
+    padding: "14px",
+  },
+
+  input: {
+    fontSize: "12px",
+    color: "#666",
+    padding: "6px 26px 6px 12px",
   },
 });
 
@@ -182,8 +221,17 @@ const Component = (props) => {
   const intl = useIntl();
   const { enqueueSnackbar } = useSnackbar();
   const classes = useStyles();
+  const [buttonDisabled, setButtonDisabled] = useState(true);
 
   const [loginMenuOpen, setLoginMenuOpen] = useState(false);
+
+  const [searchType, setSearchType] = useState("gc");
+  const [searchKeyword, setSearchKeyword] = useState("");
+  // 製品版の場合、ページアクセス後フォーカスが検索フォームに行くが、開発版の場合は行かない
+  const [searchOnFocus, setSearchOnFocus] = useState(true);
+  const [searchResultsOpen, setSearchResultsOpen] = useState(false);
+  const [searchResultsObj, setSearchResultsObj] = useState({});
+  const searchRef = useRef(null);
 
   useEffect(() => {
     // ---------------------------------------------
@@ -435,8 +483,318 @@ const Component = (props) => {
     }
   };
 
+  /**
+   * 検索キーワードを入力する
+   * @param {string} keyword - キーワード
+   */
+  const handleSearchKeyword = async ({ keyword }) => {
+    // ---------------------------------------------
+    //   キーワード更新
+    // ---------------------------------------------
+
+    setSearchKeyword(keyword);
+
+    // console.log("searchRef.current = " + searchRef.current);
+
+    // ---------------------------------------------
+    //   入力完了後に検索結果を読み込む
+    //   文字の入力ごとにデータベースにアクセスするのを防ぐ
+    //   参考：https://rios-studio.com/?p=270
+    // ---------------------------------------------
+
+    // 連続でキーワードが入力された場合は処理をクリア
+    if (searchRef.current) {
+      // console.log("clearTimeout = " + searchRef.current);
+      clearTimeout(searchRef.current);
+    }
+
+    // キーワードの入力後、一定時間が過ぎてから読み込む
+    searchRef.current = setTimeout(
+      () => handleRead({ type: searchType, keyword }),
+      500
+    );
+    // searchRef.current = setTimeout(() => handleTest(searchRef.current), 3000);
+    // console.log("setTimeout = " + searchRef.current);
+  };
+
+  /**
+   * 検索結果を読み込む
+   * @param {string} keyword - キーワード
+   * @param {number} page - ページ
+   */
+  const handleRead = async ({ type, keyword, page }) => {
+    try {
+      // ---------------------------------------------
+      //   Type 変更
+      // ---------------------------------------------
+
+      if (searchType !== type) {
+        setSearchType(type);
+      }
+
+      // ---------------------------------------------
+      //   0文字の場合、処理停止
+      // ---------------------------------------------
+
+      if (keyword.length < 1) {
+        setSearchResultsObj({});
+        return;
+      }
+
+      // ---------------------------------------------
+      //   Property
+      // ---------------------------------------------
+
+      const listObj = lodashGet(searchResultsObj, [`${type}ListObj`], "");
+      const pageObj = lodashGet(listObj, [`page${page}Obj`], "");
+      const loadedDate = lodashGet(pageObj, ["loadedDate"], "");
+
+      // ---------------------------------------------
+      //   再読込するかどうか
+      // ---------------------------------------------
+
+      let reload = false;
+
+      if (searchKeyword !== keyword) {
+        // 検索キーワードに変更があった場合
+        reload = true;
+      } else if (loadedDate) {
+        // 最後の読み込みからある程度時間（30分）が経っていた場合、再読込する
+        const datetimeNow = moment().utcOffset(0);
+        const datetimeReloadLimit = moment(loadedDate)
+          .add(process.env.NEXT_PUBLIC_SEARCH_RELOAD_MINUTES, "m")
+          .utcOffset(0);
+
+        if (datetimeNow.isAfter(datetimeReloadLimit)) {
+          reload = true;
+        }
+      }
+
+      // ---------------------------------------------
+      //   すでにデータを読み込んでいる場合は、ストアのデータを表示する
+      // ---------------------------------------------
+
+      if (!reload && pageObj) {
+        // console.log("store");
+
+        // ---------------------------------------------
+        //   Set Page
+        // ---------------------------------------------
+
+        const clonedObj = lodashCloneDeep(listObj);
+        lodashSet(clonedObj, ["page"], page);
+
+        if (type === "gc") {
+          setSearchResultsObj({
+            gcListObj: clonedObj,
+          });
+        } else if (type === "uc") {
+          setSearchResultsObj({
+            ucListObj: clonedObj,
+          });
+        } else if (type === "ur") {
+          setSearchResultsObj({
+            urListObj: clonedObj,
+          });
+        }
+
+        // console.log(`
+        //   ----- clonedObj -----\n
+        //   ${util.inspect(clonedObj, { colors: true, depth: null })}\n
+        //   --------------------\n
+        // `);
+
+        // ---------------------------------------------
+        //   Return
+        // ---------------------------------------------
+
+        return;
+      }
+
+      // console.log("fetch");
+
+      // ---------------------------------------------
+      //   Loading Open
+      // ---------------------------------------------
+
+      handleLoadingOpen({});
+
+      // ---------------------------------------------
+      //   Button Disable
+      // ---------------------------------------------
+
+      setButtonDisabled(true);
+
+      // ---------------------------------------------
+      //   FormData
+      // ---------------------------------------------
+
+      const formDataObj = {
+        type,
+        keyword,
+      };
+
+      if (page) {
+        formDataObj.page = page;
+      }
+
+      // ---------------------------------------------
+      //   Fetch
+      // ---------------------------------------------
+
+      const resultObj = await fetchWrapper({
+        urlApi: `${process.env.NEXT_PUBLIC_URL_API}/v2/common/search`,
+        methodType: "POST",
+        formData: JSON.stringify(formDataObj),
+      });
+
+      // ---------------------------------------------
+      //   Error
+      // ---------------------------------------------
+
+      if ("errorsArr" in resultObj) {
+        throw new CustomError({ errorsArr: resultObj.errorsArr });
+      }
+
+      // ---------------------------------------------
+      //   Update
+      // ---------------------------------------------
+
+      if (type === "gc") {
+        const newObj = lodashGet(resultObj, ["data", "gcListObj"], {});
+        const mergedObj = reload ? newObj : lodashMerge(listObj, newObj);
+        setSearchResultsObj({
+          gcListObj: mergedObj,
+        });
+      } else if (type === "uc") {
+        const newObj = lodashGet(resultObj, ["data", "ucListObj"], {});
+        const mergedObj = reload ? newObj : lodashMerge(listObj, newObj);
+        setSearchResultsObj({
+          ucListObj: mergedObj,
+        });
+      } else if (type === "ur") {
+        const newObj = lodashGet(resultObj, ["data", "urListObj"], {});
+        const mergedObj = reload ? newObj : lodashMerge(listObj, newObj);
+        setSearchResultsObj({
+          urListObj: mergedObj,
+        });
+
+        // console.log(`
+        //   ----- newObj -----\n
+        //   ${util.inspect(newObj, { colors: true, depth: null })}\n
+        //   --------------------\n
+        // `);
+
+        // console.log(`
+        //   ----- listObj -----\n
+        //   ${util.inspect(listObj, { colors: true, depth: null })}\n
+        //   --------------------\n
+        // `);
+
+        // console.log(`
+        //   ----- mergedObj -----\n
+        //   ${util.inspect(mergedObj, { colors: true, depth: null })}\n
+        //   --------------------\n
+        // `);
+      }
+
+      // ---------------------------------------------
+      //   console.log
+      // ---------------------------------------------
+
+      // console.log(`
+      //   ----------------------------------------\n
+      //   app/common/layout/v2/header/nav-top.js - handleRead
+      // `);
+
+      // console.log(chalk`
+      //   searchType: {green ${searchType}}
+      //   searchKeyword: {green ${searchKeyword}}
+      //   type: {green ${type}}
+      //   keyword: {green ${keyword}}
+      //   page: {green ${page} / ${typeof page}}
+      //   loadedDate: {green ${loadedDate} / ${typeof loadedDate}}
+      // `);
+
+      // console.log(`
+      //   ----- searchResultsObj -----\n
+      //   ${util.inspect(searchResultsObj, { colors: true, depth: null })}\n
+      //   --------------------\n
+      // `);
+
+      // console.log(`
+      //   ----- listObj -----\n
+      //   ${util.inspect(listObj, { colors: true, depth: null })}\n
+      //   --------------------\n
+      // `);
+
+      // console.log(`
+      //   ----- pageObj -----\n
+      //   ${util.inspect(pageObj, { colors: true, depth: null })}\n
+      //   --------------------\n
+      // `);
+
+      // console.log(`
+      //   ----- resultObj -----\n
+      //   ${util.inspect(resultObj, { colors: true, depth: null })}\n
+      //   --------------------\n
+      // `);
+    } catch (errorObj) {
+      // ---------------------------------------------
+      //   Snackbar: Error
+      // ---------------------------------------------
+
+      showSnackbar({
+        enqueueSnackbar,
+        intl,
+        errorObj,
+      });
+    } finally {
+      // ---------------------------------------------
+      //   Button Enable
+      // ---------------------------------------------
+
+      setButtonDisabled(false);
+
+      // ---------------------------------------------
+      //   Loading Close
+      // ---------------------------------------------
+
+      handleLoadingClose();
+
+      // ---------------------------------------------
+      //   Scroll To
+      // ---------------------------------------------
+
+      // handleScrollTo({
+      //   to: `forumComments-${forumThreads_id}`,
+      //   duration: 0,
+      //   delay: 0,
+      //   smooth: "easeInOutQuart",
+      //   offset: -50,
+      // });
+    }
+  };
+
+  /**
+   * 検索フォームにフォーカスする
+   */
+  const handleSearchKeywordFocus = () => {
+    setSearchOnFocus(true);
+    setSearchResultsOpen(true);
+  };
+
+  /**
+   * 検索結果を閉じる
+   */
+  const handleSearchResultsClose = () => {
+    if (!searchOnFocus && searchResultsOpen) {
+      setSearchResultsOpen(false);
+    }
+  };
+
   // --------------------------------------------------
-  //   loginUsersObj
+  //   ログインメニュー用
   // --------------------------------------------------
 
   const userID = lodashGet(loginUsersObj, ["userID"], "");
@@ -457,6 +815,208 @@ const Component = (props) => {
       "/img/common/thumbnail/none.svg"
     );
     thumbnailSrcSet = lodashGet(imagesAndVideosThumbnailArr, [0, "srcSet"], "");
+  }
+
+  // --------------------------------------------------
+  //   Property
+  // --------------------------------------------------
+
+  let searchListObj = {};
+
+  if (searchType === "gc") {
+    searchListObj = lodashGet(searchResultsObj, ["gcListObj"], {});
+  } else if (searchType === "uc") {
+    searchListObj = lodashGet(searchResultsObj, ["ucListObj"], {});
+  } else if (searchType === "ur") {
+    searchListObj = lodashGet(searchResultsObj, ["urListObj"], {});
+  }
+
+  const searchPage = lodashGet(searchListObj, ["page"], 1);
+  const searchCount = lodashGet(searchListObj, ["count"], 0);
+  const searchLimit = parseInt(
+    searchListObj.limit || process.env.NEXT_PUBLIC_SEARCH_LIMIT,
+    10
+  );
+
+  const searchArr = lodashGet(
+    searchListObj,
+    [`page${searchPage}Obj`, "arr"],
+    []
+  );
+
+  // --------------------------------------------------
+  //   Component - Search Result List
+  // --------------------------------------------------
+
+  const componentsSearchResultsListArr = [];
+
+  for (const [index, _id] of searchArr.entries()) {
+    // dataObj
+    const dataObj = lodashGet(searchListObj, ["dataObj", _id], {});
+
+    //   console.log(`
+    //   ----- dataObj -----\n
+    //   ${util.inspect(dataObj, { colors: true, depth: null })}\n
+    //   --------------------\n
+    // `);
+
+    // push
+    if (searchType === "gc") {
+      componentsSearchResultsListArr.push(<CardGc key={index} obj={dataObj} />);
+    } else if (searchType === "uc") {
+      componentsSearchResultsListArr.push(<CardUc key={index} obj={dataObj} />);
+    } else if (searchType === "ur") {
+      componentsSearchResultsListArr.push(
+        <div
+          css={css`
+            ${index === 0 ? "margin: 0" : "margin: 16px 0 0 0"};
+          `}
+          key={index}
+        >
+          {/* Card */}
+          <CardPlayer
+            obj={dataObj}
+            showFollow={true}
+            showEditButton={false}
+            defaultExpanded={false}
+            // cardPlayersObj={cardPlayersObj}
+            // setCardPlayersObj={setCardPlayersObj}
+          />
+        </div>
+      );
+    }
+  }
+
+  // --------------------------------------------------
+  //   Component - Search Result
+  // --------------------------------------------------
+
+  let componentSearchResults = "";
+
+  if (searchResultsOpen && searchKeyword) {
+    componentSearchResults = (
+      <ClickAwayListener onClickAway={handleSearchResultsClose}>
+        <Paper
+          css={css`
+            max-width: 600px;
+            max-height: 70vh;
+            overflow: auto;
+            box-sizing: border-box;
+
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+
+            margin: 62px auto 0;
+            padding: 14px;
+
+            @media screen and (max-width: 480px) {
+              width: 100%;
+            }
+          `}
+          // elevation={12}
+        >
+          <div
+            css={css`
+              margin: 0 0 20px 0;
+            `}
+          >
+            <ButtonGroup
+              disabled={buttonDisabled}
+              color="primary"
+              aria-label="outlined primary button group"
+            >
+              <Button
+                onClick={() =>
+                  handleRead({
+                    type: "gc",
+                    keyword: searchKeyword,
+                    page: 1,
+                  })
+                }
+              >
+                <span
+                  css={css`
+                    font-weight: ${searchType === "gc" ? "bold" : "normal"};
+                  `}
+                >
+                  ゲームC
+                </span>
+              </Button>
+              <Button
+                onClick={() =>
+                  handleRead({
+                    type: "uc",
+                    keyword: searchKeyword,
+                    page: 1,
+                  })
+                }
+              >
+                <span
+                  css={css`
+                    font-weight: ${searchType === "uc" ? "bold" : "normal"};
+                  `}
+                >
+                  ユーザーC
+                </span>
+              </Button>
+              <Button
+                onClick={() =>
+                  handleRead({
+                    type: "ur",
+                    keyword: searchKeyword,
+                    page: 1,
+                  })
+                }
+              >
+                <span
+                  css={css`
+                    font-weight: ${searchType === "ur" ? "bold" : "normal"};
+                  `}
+                >
+                  ユーザー
+                </span>
+              </Button>
+            </ButtonGroup>
+          </div>
+
+          {componentsSearchResultsListArr}
+
+          {/* Pagination */}
+          <div
+            css={css`
+              display: flex;
+              flex-flow: row wrap;
+              padding: 0 0 0 0;
+              margin: 12px 0 0 0;
+            `}
+          >
+            {/* Pagination */}
+            <div
+              css={css`
+                margin: 8px 24px 0 0;
+              `}
+            >
+              <Pagination
+                disabled={buttonDisabled}
+                onChange={(page) =>
+                  handleRead({
+                    type: searchType,
+                    keyword: searchKeyword,
+                    page,
+                  })
+                }
+                pageSize={searchLimit}
+                current={searchPage}
+                total={searchCount}
+                locale={localeInfo}
+              />
+            </div>
+          </div>
+        </Paper>
+      </ClickAwayListener>
+    );
   }
 
   // --------------------------------------------------
@@ -535,33 +1095,44 @@ const Component = (props) => {
         }*/}
 
       {/* 検索フォーム */}
-      {/*<div
+      <div
+        css={css`
+          display: flex;
+          flex-grow: 1;
+          justify-content: center;
+          margin-left: auto;
+        `}
+        onFocus={handleSearchKeywordFocus}
+        onBlur={() => setSearchOnFocus(false)}
+      >
+        {/* テキストフィールド */}
+        <TextField
           css={css`
-            display: flex;
-            flex-grow: 1;
-            justify-content: center;
-            margin-left: auto;
+            && {
+              width: 90%;
+            }
           `}
-        >
-          <TextField
-            css={css`
-              && {
-                width: 90%;
-              }
-            `}
-            placeholder="検索"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <IconSearch />
-                </InputAdornment>
-              ),
-            }}
-            inputProps={{
-              autoComplete: "off"
-            }}
-          />
-        </div>*/}
+          autoFocus={true}
+          placeholder="検索"
+          value={searchKeyword}
+          onChange={(eventObj) =>
+            handleSearchKeyword({ keyword: eventObj.target.value })
+          }
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <IconSearch />
+              </InputAdornment>
+            ),
+          }}
+          inputProps={{
+            autoComplete: "off",
+          }}
+        />
+      </div>
+
+      {/* 検索結果 */}
+      {componentSearchResults}
 
       {/* 右寄せ（検索フォームを非表示にした場合、代わりにこのタグで右寄せにしている） */}
       <div
